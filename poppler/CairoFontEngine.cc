@@ -261,6 +261,8 @@ _ft_done_face (void *closure)
   if (data->fd != -1) {
 #if defined(__SUNPRO_CC) && defined(__sun) && defined(__SVR4)
     munmap ((char*)data->bytes, data->size);
+#elif defined(ANDROID)
+    free(data->bytes);
 #else
     munmap (data->bytes, data->size);
 #endif
@@ -298,9 +300,16 @@ _ft_new_face (FT_Library lib,
       return _ft_new_face_uncached (lib, filename, font_data, font_data_len, face_out, font_face_out);
     }
 
+#ifdef ANDROID
+    tmpl.bytes = (unsigned char *) malloc(st.st_size);
+    if (!tmpl.bytes) {
+      tmpl.bytes = (unsigned char *) MAP_FAILED;
+    }
+#else
     tmpl.bytes = (unsigned char *) mmap (NULL, st.st_size,
 					 PROT_READ, MAP_PRIVATE,
 					 tmpl.fd, 0);
+#endif
     if (tmpl.bytes == MAP_FAILED) {
       close (tmpl.fd);
       return _ft_new_face_uncached (lib, filename, font_data, font_data_len, face_out, font_face_out);
@@ -320,6 +329,8 @@ _ft_new_face (FT_Library lib,
       if (tmpl.fd != -1) {
 #if defined(__SUNPRO_CC) && defined(__sun) && defined(__SVR4)
         munmap ((char*)tmpl.bytes, tmpl.size);
+#elif defined(ANDROID)
+        free(tmpl.bytes);
 #else
         munmap (tmpl.bytes, tmpl.size);
 #endif
@@ -341,6 +352,8 @@ _ft_new_face (FT_Library lib,
     if (tmpl.fd != -1) {
 #if defined(__SUNPRO_CC) && defined(__sun) && defined(__SVR4)
       munmap ((char*)tmpl.bytes, tmpl.size);
+#elif defined(ANDROID)
+      free(tmpl.bytes);
 #else
       munmap (tmpl.bytes, tmpl.size);
 #endif
